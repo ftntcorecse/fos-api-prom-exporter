@@ -16,7 +16,6 @@ class PrometheusFOSAPIInterface():
         self.fos_debug = bool(strtobool(os.environ.get("FOS_DEBUG")))
         self.fos_disable_request_warnings = bool(strtobool(os.environ.get("FOS_DISABLE_REQUEST_WARNINGS")))
         self.fos_polling_timeout = os.environ.get("FOS_POLLING_TIMEOUT")
-        # self.fos_api_key = os.environ.get("FOS_API_KEY") # get this key as needed below
 
     def get_url(self, url=None):
         """ Gets and returns a URL from a Fortigate based on its class self.* properties"""

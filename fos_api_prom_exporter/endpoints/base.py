@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 import os, logging, sys
 from fos_api_prom_exporter.fos_api import PrometheusFOSAPIInterface
+import asyncio
 
 logging.basicConfig(stream=sys.stdout,
                     level=logging.INFO,
@@ -50,7 +51,7 @@ class FOSEndpoint(ABC):
     def prom_metrics(self, prom_metrics=""):
         self.__prom_metrics = prom_metrics
 
-    def collect(self):
+    async def collect(self):
         success, data = self.fgt.get_url(self.url)
         if success:
             self.url_results = dict(data)
@@ -60,7 +61,7 @@ class FOSEndpoint(ABC):
 
     @abstractmethod
     def init_prom_metrics(self):
-        self.prom_metrics = {}
+        raise NotImplementedError("This class should be abstracted!")
 
     @abstractmethod
     def update_prom_metrics(self):

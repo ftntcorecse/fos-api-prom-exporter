@@ -23,10 +23,7 @@ class SystemResourceUsage(FOSEndpoint):
             "disk_lograte": Gauge('fgt_log_rate_disk', 'Rate of log messages written to disk'),
             "faz_lograte": Gauge('fgt_log_rate_faz', 'Rate of log messages written to FortiAnalyzer'),
             "forticloud_lograte": Gauge('fgt_log_rate_forticloud', 'Rate of log messages written to FortiCloud'),
-            "fgt_version": Info('fgt_version', 'Firmware running on the FGT'),
-            "fgt_version_build": Info('fgt_version_build', 'Specific version build number'),
-            "fgt_serial": Info('fgt_serial_number', 'Device Serial Number'),
-            "fgt_vdom": Info('fgt_vdom', 'VDOM Being monitored')
+            "faz_cloud_lograte": Gauge('fgt_log_rate_faz_cloud', 'Rate of log messages written to FAZ Cloud')
         }
 
     def update_prom_metrics(self):
