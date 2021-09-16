@@ -106,3 +106,9 @@ This is the metric you must use to properly tune the above mentioned "knobs" for
 * Number of Active Endpoints.
 
 This is an automatically created Prometheus metrics, and it can be tracked/alerted from Grafana. 
+
+The name of this metric is: **fos_metric_polling_interval_saturation**
+
+### Polling Duration
+
+The polling duration is also tracked as an automatic Prometheus metric: **fos_metric_collection_duration**
