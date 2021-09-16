@@ -17,11 +17,14 @@ class PrometheusFOSAPIInterface():
         self.fos_disable_request_warnings = bool(strtobool(os.environ.get("FOS_DISABLE_REQUEST_WARNINGS")))
         self.fos_polling_timeout = os.environ.get("FOS_POLLING_TIMEOUT")
 
-    def get_url(self, url=None, vdom=None, filter=None):
+    def get_url(self, host=None, apikey=None, url=None, vdom=None, filter=None):
         """ Gets and returns a URL from a Fortigate based on its class self.* properties"""
-
-        with pyFGT.fortigate.FortiGate(self.fos_host,
-                                       apikey=os.environ.get("FOS_API_KEY"),
+        if not host:
+            host = self.fos_host
+        if not apikey:
+            apikey = os.environ.get("FOS_API_KEY")
+        with pyFGT.fortigate.FortiGate(host,
+                                       apikey=apikey,
                                        use_ssl=self.fos_use_ssl,
                                        debug=self.fos_debug,
                                        verify_ssl=self.fos_verify_ssl,

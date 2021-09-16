@@ -1,50 +1,59 @@
 from fos_api_prom_exporter.build_prom_registry import build_prometheus_registry
 from fos_api_prom_exporter.collect_endpoints import collect_active_endpoint_monitors
-from prometheus_client import start_http_server, Histogram
+from fos_api_prom_exporter.app_metrics import WHOLE_COLLECTION_DURATION, POLLING_INTERVAL_SAUTRATION
+from fos_api_prom_exporter.get_fgt_list import get_fortigate_list
+from prometheus_client import start_http_server
 import logging, sys
 import os
 import time
 import asyncio
 
+# configure logging
 logging.basicConfig(stream=sys.stdout,
                     level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logs = logging.getLogger("FOS_Prometheus_Exporter")
 
 # make asyncio loop
 event_loop = asyncio.get_event_loop()
 
-logs = logging.getLogger("FOS_Prometheus_Exporter")
-# create a specific metric for logging how long it takes to get data from the FortiGate
-WHOLE_COLLECTION_DURATION = Histogram('fos_metric_collection_duration',
-                                      'How long it takes for each collection pass on the fortigate')
-POLLING_INTERVAL_SAUTRATION = Histogram('fos_metric_polling_interval_saturation',
-                                        'A KPI for how long it takes to query the FortiGate API compared'
-                                        'to how much of the polling interval that time is consuming.')
+# get any extra fortigates from the env file and store in a dictionary
+fortigate_list = get_fortigate_list()
 
+# build the prometheus metric registry
+# make sure to also register the metrics contained in fos_api_prom_exporter.app_metrics
 REGISTRY = build_prometheus_registry()
 REGISTRY.register(WHOLE_COLLECTION_DURATION)
+REGISTRY.register(POLLING_INTERVAL_SAUTRATION)
 
 if __name__ == '__main__':
+    # start the prometheus http server
     start_http_server(int(os.environ.get("PROM_EXPORTER_PORT")))
     logs.info(f"Prometheus Server started on port {os.environ.get('PROM_EXPORTER_PORT')}")
-    polling_interval = int(os.environ.get("FOS_POLLING_INTERVAL"))
+    # read the polling interval, so we don't have to keep doing it
+    polling_interval = float(os.environ.get("FOS_POLLING_INTERVAL"))
     while True:
+        # start a time for this loop
         start_time = time.time()
         # run the collections in async
-        event_loop.run_until_complete(collect_active_endpoint_monitors(event_loop))
+        event_loop.run_until_complete(collect_active_endpoint_monitors(event_loop=event_loop,
+                                                                       fortigate_list=fortigate_list))
         # record end time
         end_time = time.time()
-        # report total time taken and the polling interval delta
+        # calculate the duration of the collection
         duration = float(end_time - start_time)
+        # calculate the polling interval delta (minus duration)
         polling_interval_delta = float(polling_interval - duration)
+        # calculate the polling saturation percentage
         polling_saturation = float((duration / polling_interval_delta)*100)
         logs.info(f"Collection took {duration} seconds.")
         logs.info(f"Sleeping for {polling_interval_delta} seconds.")
         logs.info(f"Polling Saturation is {int(polling_saturation)}%")
         # record the duration
         WHOLE_COLLECTION_DURATION.observe(duration)
+        # record the polling saturation
         POLLING_INTERVAL_SAUTRATION.observe(polling_saturation)
-        # sleep -- back off if the delta is negative
+        # sleep -- back off if the delta is negative (polling saturation > 100%)
         if polling_interval_delta < 0:
             logs.warning("Polling interval exceeded! Sleeping for 5 seconds.")
             time.sleep(5)

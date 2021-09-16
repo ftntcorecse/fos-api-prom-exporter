@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class RouterStatistics(FOSEndpoint):
     def __init__(self):
+        self.host = environ.get("FOS_HOST")
         self.url = "/monitor/router/statistics"
         self.vdom = environ.get("FOS_HOST_VDOM")
         self.filter = None
@@ -14,24 +16,23 @@ class RouterStatistics(FOSEndpoint):
 
     def init_prom_metrics(self):
         self.prom_metrics = {
-            "routes": Gauge('fgt_routes', 'Total number of routes'),
-            "ipv4_routes": Gauge('fgt_ipv4_routes', 'Total number of IPv4 routes'),
-            "ipv6_routes": Gauge('fgt_ipv6_routes', 'Total number of IPv6 routes')
+            "routes": Gauge('fgt_routes', 'Total number of routes', ['host', 'vdom']),
+            "ipv4_routes": Gauge('fgt_ipv4_routes', 'Total number of IPv4 routes', ['host', 'vdom']),
+            "ipv6_routes": Gauge('fgt_ipv6_routes', 'Total number of IPv6 routes', ['host', 'vdom'])
         }
 
-    def update_prom_metrics(self):
-        results = dict(self.url_results["results"])
-        for k, v in results.items():
+    def update_prom_metrics(self, host=None, vdom=None, results=None):
+        for k, v in results["results"].items():
             try:
                 if k == "total_lines":
-                    self.prom_metrics["routes"].set(v)
+                    self.prom_metrics["routes"].labels(host=host, vdom=vdom).set(v)
                 if k == "total_lines_ipv4":
-                    self.prom_metrics["ipv4_routes"].set(v)
+                    self.prom_metrics["ipv4_routes"].labels(host=host, vdom=vdom).set(v)
                 if k == "total_lines_ipv6":
-                    self.prom_metrics["ipv6_routes"].set(v)
+                    self.prom_metrics["ipv6_routes"].labels(host=host, vdom=vdom).set(v)
             except Exception as e:
                 self.logs.error(f"Error updating metric {k}: {e}")
                 continue
-        self.logs.debug(f"Done Updating Prom Metrics for {__name__}")
+        self.logs.debug(f"Done Updating Prom Metrics for {__name__} on {host}")
 
 

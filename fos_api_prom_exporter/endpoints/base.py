@@ -60,6 +60,14 @@ class FOSEndpoint(ABC):
         self.__filter = filter
 
     @property
+    def host(self):
+        return self.__host
+
+    @host.setter
+    def host(self, host=""):
+        self.__host = host
+
+    @property
     def prom_metrics(self):
         return self.__prom_metrics
 
@@ -67,22 +75,30 @@ class FOSEndpoint(ABC):
     def prom_metrics(self, prom_metrics=""):
         self.__prom_metrics = prom_metrics
 
-    async def collect(self):
+    async def collect(self, host=None, apikey=None, vdom=None):
+        if not host:
+            host = self.host
+        if not vdom:
+            vdom = self.vdom
         try:
-            success, data = self.fgt.get_url(url=self.url, vdom=self.vdom, filter=self.filter)
+            success, data = self.fgt.get_url(host=host,
+                                             apikey=apikey,
+                                             url=self.url,
+                                             vdom=vdom,
+                                             filter=self.filter)
             if success:
-                self.url_results = dict(data)
-                self.update_prom_metrics()
+                results = dict(data)
+                self.update_prom_metrics(host=host, vdom=vdom, results=results)
             else:
                 raise ConnectionError(f"The call to url {self.url} failed.")
         except Exception as e:
-            self.logs.error(f"An error occurred collecting some metrics: {e})")
+            self.logs.error(f"An error occurred collecting some metrics on {host}: {e})")
 
     @abstractmethod
     def init_prom_metrics(self):
         raise NotImplementedError("This class should be abstracted!")
 
     @abstractmethod
-    def update_prom_metrics(self):
+    def update_prom_metrics(self, host=host, vdom=vdom, results=None):
         raise NotImplementedError("This class should be abstracted!")
 
