@@ -12,12 +12,15 @@ You should also have a Grafana/Prometheus server setup to receive the data.
 * Clone this repo to a new project in an IDE of your choice.
 * Copy the **.env.example** file to a new file called simply **.env**
 * If multiple Fortigates are needed see the "FOS_EXTRA_HOST" lines in the .env.example file.
-* Create a read-only admin role in the FortiGate.
-* Create a read-only API admin using the role above, and record the API key.
+* Create a read-only admin role on the target FortiGate(s).
+* On that same FortiGate, create a read-only API admin using the role above, and record the API key.
+
+  * Make sure to setup the trusted host IP if this a production deployment.
 * Replace the **FOS_API_KEY** value in the **.env** file with the new API key.
 * Replace the **FOS_HOST** value to the FortiGate that will be monitored
 
     * If the FortiGate is using any other port than 443 for the admin GUI, this value needs to reflect that.
+    * **host:port** format is always preferred -- otherwise port 443 is assumed. 
 
 * Start **app.py**
 * Confirm the Prometheus exporter is alive on the HTTP port by opening it with a browser  
@@ -116,3 +119,110 @@ This metric is tracked as a whole across all configured FortiGates and Endpoints
 The polling duration is also tracked as an automatic Prometheus metric: **fos_metric_collection_duration**
 
 This metric is tracked as a whole across all configured FortiGates and Endpoints.
+
+## Appendix A - .env.example file
+
+```
+PROM_EXPORTER_PORT = 8000
+FOS_POLLING_INTERVAL = 15
+FOS_POLLING_TIMEOUT = 4
+FOS_HOST = "host:port"
+FOS_HOST_LABEL = "friendlyName"
+FOS_HOST_VDOM = "root"
+FOS_USE_SSL = "True"
+FOS_VERIFY_SSL = "False"
+FOS_API_KEY = "yourFortiGateAPIKeyWithReadOnlyPermissions"
+FOS_DEBUG = "False"
+FOS_DISABLE_REQUEST_WARNINGS = "True"
+
+# EXTRA FORTIGATES
+# Use the prefix "FOS_EXTRA_HOST_x"
+# use the _1 and _2 and _3 and so on to suffix specific additional FOS hosts and API keys
+# we use a wildcard operator to pull in all env vars with the prefix "FOS_EXTRA_HOST"
+# must be the json format as shown, with the exact same key names.
+# it's easier to include the host/apikey/vdom in a dict that try to correlate multiple .env vars.
+# see the function @ fos_api_prom_exporter/get_fgt_list.py for how this list is compiled.
+# then see the function @ fos_api_prom_exporter/collect_endpoints.py to see how the list is used/executed.
+FOS_EXTRA_HOST_1 = '{"host": "10.1.1.1:443", "apikey": "123test", "vdom": "root"}'
+#FOS_EXTRA_HOST_2 = '{"host": "10.2.1.1:443", "apikey": "123test", "vdom": "root"}'
+#FOS_EXTRA_HOST_3 = '{"host": "10.3.1.1:443", "apikey": "123test", "vdom": "root"}'
+```
+
+## Appendix B - System Endpoint Class Example
+
+```python
+from prometheus_client import Counter, Gauge, Enum, Summary, Histogram, Info
+from fos_api_prom_exporter.endpoints.base import FOSEndpoint
+from os import environ
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class SystemResourceUsage(FOSEndpoint):
+    """Gets the resource usage for a FortiGate / VDOM """
+    def __init__(self):
+        self.host = environ.get("FOS_HOST")
+        self.url = "/monitor/system/resource/usage"
+        self.vdom = environ.get("FOS_HOST_VDOM")
+        self.filter = None
+        super(SystemResourceUsage, self).__init__()
+
+    def init_prom_metrics(self):
+        """
+        Defines the Prometheus metrics for this child-class of the FOSEndpoint Abstract class. 
+        - note the usage of the list on each counter
+        - these lists define the labels for each metric
+        - those labels are then pushed at the time of recording a metric value (see below, update_prom_metrics() )
+        :return: None
+        """
+        self.prom_metrics = {
+ 
+            "cpu": Gauge('fgt_cpu_usage',  # Metric name
+                         'CPU Resource Utilization',  # Metric description
+                         ['host', 'vdom']),  # Metric labels
+            "mem": Gauge('fgt_memory_usage', 'RAM/Memory Resource Utilization', ['host', 'vdom']),
+            "disk": Gauge('fgt_disk_usage', 'Disk spaced used percent', ['host', 'vdom']),
+            "session": Gauge('fgt_ipv4_sessions', 'Active IPv4 Sessions', ['host', 'vdom']),
+            "session6": Gauge('fgt_ipv6_sessions', 'Active IPv6 Sessions', ['host', 'vdom']),
+            "setuprate": Gauge('fgt_ipv4_session_setup_rate', 'Rate of new IPv4 Sessions', ['host', 'vdom']),
+            'setuprate6': Gauge('fgt_ipv6_session_setup_rate', 'Rate of new IPv6 Sessions', ['host', 'vdom']),
+            "npu_session": Gauge('fgt_ipv4_npu_sessions', 'Active IPv4 Sessions using NPU', ['host', 'vdom']),
+            "npu_session6": Gauge('fgt_ipv6_npu_sessions', 'Active IPv6 Sessions using NPU', ['host', 'vdom']),
+            "nturbo_session": Gauge('fgt_ipv4_nturbo_sessions', 'Active IPv4 Sessions using nTurbo', ['host', 'vdom']),
+            "nturbo_session6": Gauge('fgt_ipv6_nturbo_sessions', 'Active IPv6 Sessions using nTurbo', ['host', 'vdom']),
+            "disk_lograte": Gauge('fgt_log_rate_disk', 'Rate of log messages written to disk', ['host', 'vdom']),
+            "faz_lograte": Gauge('fgt_log_rate_faz', 'Rate of log messages written to FortiAnalyzer', ['host', 'vdom']),
+            "forticloud_lograte": Gauge('fgt_log_rate_forticloud', 'Rate of log messages written to FortiCloud',
+                                        ['host', 'vdom']),
+            "faz_cloud_lograte": Gauge('fgt_log_rate_faz_cloud', 'Rate of log messages written to FAZ Cloud',
+                                       ['host', 'vdom'])
+        }
+
+    def update_prom_metrics(self, host=None, vdom=None, results=None):
+        """
+        Updates the prometheus metrics. In this case it is easy because we've named the objects in the dictionary
+        above exactly as they come across in the URL results from the API call. 
+        
+        So we simply loop through them get the "current" key for each counter that is returned in this API call.
+        
+        :param host: the hostname/ip:port of the FortiGate
+        :param vdom: the vdom being queried
+        :param results: the results from the url call to this specific fortigate on the self.url property/path
+        :return: None
+        """
+        for k, v in results["results"].items():
+            try:
+                # notice the specification of labels using the input parameters to differentiate this metric
+                self.prom_metrics[k].labels(host=host, vdom=vdom).set(v[0]["current"])
+                # send the data to the debug logger if set to debug.
+                self.logs.debug(f"{k}: {v[0]['current']}")
+            except Exception as e:
+                # report any errors
+                self.logs.error(f"Error updating metric {k}: {e}")
+                # keep going on to the next metric, this train doesn't stop.
+                continue
+        # report the end of the loop to the debug logger
+        self.logs.debug(f"Done Updating Prom Metrics for {__name__}")
+
+```
