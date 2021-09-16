@@ -84,7 +84,7 @@ See their descriptions in base.py as well as the other endpoint files to underst
 
 In order to know exactly what metrics you want to create, use **test/fetch_url.py**, and the FNDN FortiOS API Explorer
 online, to find new API endpoints and explore what data they return. Look for monitor URLs on FNDN that catch attention,
-and then explore those APIs if you can use the data into useful metrics.
+and then explore those APIs to see if you can turn the data into useful metrics.
 
 Once you have identified new KPIs to write, start with **init_prom_metrics()**. Ensure you include the prometheus labels
 such as host, and vdom or else you cannot differentiate them.
@@ -97,8 +97,7 @@ update the metrics created in **init_prom_metrics()** via the self.prom_metrics 
 The .env variable **FOS_POLLING_INTERVAL** controls how often new asyncio tasks to pull data are created.
 
 The .env variables **FOS_EXTRA_HOST_x** (numbered x) allows you to add additional FortiGates to monitor from this
-specific instance of the exporter. Be sure to review the section below about tuning this exporter if this feature is
-used.
+specific instance of the exporter. 
 
 The file **fos_api_prom_exporter/endpoints/__init__.py** includes a basic dictionary for importing monitor endpoint
 classes and including them for processing.
@@ -114,16 +113,16 @@ Saturation**.
 #### Polling Interval Saturation
 
 The **Polling Interval Saturation** is a percentage (0-100%) of how much time it is taking to actually poll all
-FortiGates and Active Monitors, vs the polling interval itself.
+FortiGates and Active Monitors, vs. the polling interval itself.
 
 If the polling interval is 10 seconds, and the time to poll data is 1 second, that would be a 10% saturation. Like any
 CPU gear you want to aim for less than 70% to allow for fluctuations.
 
-If at any point the saturation goes over 100% the exporter will "back off" for 5 seconds at minimum, and throw a **
-warning** log event. Look for these log entries in Grafana as it they are the "canary in the coal mine" for polling
+If at any point the saturation goes over 100% the exporter will "back off" for 5 seconds at minimum, and throw a 
+**warning** log event. Look for these log entries in Grafana, as they are the "canary in the coal mine" for polling
 tuning problems.
 
-These are the "knobs" for each instance of this exporter that allow you to "tune" the exporters performance to keep
+These are the "knobs" for each instance of this exporter that allow you to "tune" the exporter's performance to keep
 the **Polling Interval Saturation** below 70%:
 
 * Polling Interval
