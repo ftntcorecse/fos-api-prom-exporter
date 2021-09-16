@@ -109,6 +109,10 @@ This is an automatically created Prometheus metrics, and it can be tracked/alert
 
 The name of this metric is: **fos_metric_polling_interval_saturation**
 
+This metric is tracked as a whole across all configured FortiGates and Endpoints.
+
 ### Polling Duration
 
 The polling duration is also tracked as an automatic Prometheus metric: **fos_metric_collection_duration**
+
+This metric is tracked as a whole across all configured FortiGates and Endpoints.
