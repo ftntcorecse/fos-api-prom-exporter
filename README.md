@@ -1,6 +1,7 @@
 # FortiGate API Prometheus Exporter
 
 ## Contents
+
 1. [Pre-Requisites](#pre-requisites)
 2. [Getting Started](#getting-started)
 3. [Managing the API Monitor List](#managing-the-api-monitor-list)
@@ -13,8 +14,7 @@
 
 A FortiGate is required at a minimum.
 
-You should also have a Grafana/Prometheus server setup to receive the data. 
-
+You should also have a Grafana/Prometheus server setup to receive the data.
 
 ### Getting Started
 
@@ -24,16 +24,16 @@ You should also have a Grafana/Prometheus server setup to receive the data.
 * Create a read-only admin role on the target FortiGate(s).
 * On that same FortiGate, create a read-only API admin using the role above, and record the API key.
 
-  * Make sure to setup the trusted host IP if this a production deployment.
+    * Make sure to setup the trusted host IP if this a production deployment.
 * Replace the **FOS_API_KEY** value in the **.env** file with the new API key.
 * Replace the **FOS_HOST** value to the FortiGate that will be monitored
 
     * If the FortiGate is using any other port than 443 for the admin GUI, this value needs to reflect that.
-    * **host:port** format is always preferred -- otherwise port 443 is assumed. 
+    * **host:port** format is always preferred -- otherwise port 443 is assumed.
 
 * Start **app.py**
 * Confirm the Prometheus exporter is alive on the HTTP port by opening it with a browser  
-  and metrics can be viewed. 
+  and metrics can be viewed.
 * Edit your existing Prometheus server config file to include the following stanza:
 
 ```yaml
@@ -41,19 +41,21 @@ You should also have a Grafana/Prometheus server setup to receive the data.
     scrape_interval: 5s
     metrics_path: /   < -- this is important
     static_configs:
-      - targets: ['localhost:8000'] < -- replace if running on remote server or different port
+      - targets: [ 'localhost:8000' ] < -- replace if running on remote server or different port
 ```
 
 * Restart Prometheus.
 * Check that the service in Prometheus is running and metrics are being collected.
-* Add Prometheus to Grafana as a data source if not already present. 
+* Add Prometheus to Grafana as a data source if not already present.
 
 ### Managing the API Monitor List
 
-The file **fos_api_prom_exporter/endpoints/__init__.py** includes a basic dictionary for importing
-endpoint/monitor classes and including them for processing.
+The file **fos_api_prom_exporter/endpoints/__init__.py** includes a basic dictionary for importing endpoint/monitor
+classes and including them for processing.
 
-If any module/class is commented out from this list it will not be processed:
+If any module/class is commented out from this list it will not be processed.
+
+This is also where you import and add additional endpoint classes (see below).
 
 ```python
 ACTIVE_ENDPOINT_MONITORS = {
@@ -62,67 +64,75 @@ ACTIVE_ENDPOINT_MONITORS = {
     "vpnSSLStatistics": VPNSSLStatistics(),
     "status": Status(),
     "interfaces": Interfaces(),
-    #"vpnIPSecStatistics": VPNIPSecStatistics()  # <--- disabled
+    # "vpnIPSecStatistics": VPNIPSecStatistics()  # <--- disabled
 }
 ```
 
-
 ### Expanding Monitoring by Creating New Endpoint Classes
 
-The file **fos_api_prom_exporter/endpoints/base.py** includes an abstract class for easily 
-expanding the FortiOS Prometheus
-Exporter to include additional APIs and Metrics from the FortiGate.
+The file **fos_api_prom_exporter/endpoints/base.py** includes an abstract class for easily expanding the FortiOS
+Prometheus Exporter to include additional APIs and Metrics from the FortiGate.
 
-There are six examples of how these are written under the **fos_api_prom_exporter/endpoints** folder. Please examine 
+There are six examples of how these are written under the **fos_api_prom_exporter/endpoints** folder. Please examine
 these example classes to understand how to construct a new one.
 
-There are two main methods that need to be written for any new endpoint/monitor class: 
+There are two main methods that need to be written for any new endpoint/monitor class:
 
 * init_prom_metrics
 * update_prom_metrics
 
 See their descriptions in base.py as well as the other endpoint files to understand how these are created.
 
-In order to know exactly what metrics you want to create, use **test/fetch_url.py**, and the FNDN FortiOS API Explorer online,
-to find new API endpoints and explore what data they return.
+In order to know exactly what metrics you want to create, use **test/fetch_url.py**, and the FNDN FortiOS API Explorer
+online, to find new API endpoints and explore what data they return. Look for monitor URLs on FNDN that catch attention,
+and then explore those APIs if you can use the data into useful metrics.
 
 Once you have identified new KPIs to write, start with **init_prom_metrics()**. Ensure you include the prometheus labels
-such as host, and vdom or else you cannot differentiate them. 
-
+such as host, and vdom or else you cannot differentiate them.
 
 ### Tuning the Prometheus Exporter
 
-The .env variable **FOS_POLLING_INTERVAL** controls how often new tasks to pull data are created. 
+The .env variable **FOS_POLLING_INTERVAL** controls how often new asyncio tasks to pull data are created.
 
 The .env variables **FOS_EXTRA_HOST_x** (numbered x) allows you to add additional FortiGates to monitor from this
-specific instance of the exporter.
+specific instance of the exporter. Be sure to review the section below about tuning this exporter if this feature is
+used.
 
-The file **fos_api_prom_exporter/endpoints/__init__.py** includes a basic dictionary for importing
-monitor endpoint classes and including them for processing.
+The file **fos_api_prom_exporter/endpoints/__init__.py** includes a basic dictionary for importing monitor endpoint
+classes and including them for processing.
 
-These three basic elements will vary greatly from deployment to deployment, and so it is up to the user to properly tune
-each instance of this exporter.
+These three basic tuning elements (or "knobs") will vary greatly from deployment to deployment, and so it is up to the
+user to properly tune each instance of this exporter.
 
-The KPI for understanding "how behind" the exporter is in its polling of FortiGates, is called the **Polling Interval Saturation**.
+Remember that multiple docker instances with different .env files can be run for multi-threading purposes.
+
+The KPI for understanding "how behind" the exporter is in its polling of FortiGates, is called the **Polling Interval
+Saturation**.
 
 #### Polling Interval Saturation
 
-The Polling Interval Saturation is a percentage (0-100%) of how much time it is taking to actually poll all FortiGates
-and Active Monitors, vs the polling interval itself.
+The **Polling Interval Saturation** is a percentage (0-100%) of how much time it is taking to actually poll all
+FortiGates and Active Monitors, vs the polling interval itself.
 
-If the polling interval is 10 seconds, and the time to poll data is 1 second, that would be a 10% saturation.
+If the polling interval is 10 seconds, and the time to poll data is 1 second, that would be a 10% saturation. Like any
+CPU gear you want to aim for less than 70% to allow for fluctuations.
 
-This is the metric you must use to properly tune the above-mentioned "knobs" for each instance of this exporter:
+If at any point the saturation goes over 100% the exporter will "back off" for 5 seconds at minimum, and throw a **
+warning** log event. Look for these log entries in Grafana as it they are the "canary in the coal mine" for polling
+tuning problems.
+
+These are the "knobs" for each instance of this exporter that allow you to "tune" the exporters performance
+to keep the **Polling Interval Saturation** below 70%:
 
 * Polling Interval
 * Extra FortiGates
 * Number of Active Endpoints
 
-This is an automatically created Prometheus metrics, and it can be tracked/alerted from Grafana. 
+This is an automatically created Prometheus metric, and it can be tracked/alerted from Grafana.
 
 The name of this metric is: **fos_metric_polling_interval_saturation**
 
-This metric is tracked as a whole across all configured FortiGates and Endpoints.
+This metric is tracked as a whole across all configured FortiGates and Endpoints, and is labeled.
 
 #### Polling Duration
 
@@ -171,6 +181,7 @@ load_dotenv()
 
 class SystemResourceUsage(FOSEndpoint):
     """Gets the resource usage for a FortiGate / VDOM """
+
     def __init__(self):
         self.host = environ.get("FOS_HOST")
         self.url = "/monitor/system/resource/usage"
@@ -187,7 +198,7 @@ class SystemResourceUsage(FOSEndpoint):
         :return: None
         """
         self.prom_metrics = {
- 
+
             "cpu": Gauge('fgt_cpu_usage',  # Metric name
                          'CPU Resource Utilization',  # Metric description
                          ['host', 'vdom']),  # Metric labels
