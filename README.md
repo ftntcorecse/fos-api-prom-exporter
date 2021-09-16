@@ -39,7 +39,7 @@ You should also have a Grafana/Prometheus server setup to receive the data.
 ## Managing the API Monitor List
 
 The file **fos_api_prom_exporter/endpoints/__init__.py** includes a basic dictionary for importing
-monitor classes and including them for processing.
+endpoint/monitor classes and including them for processing.
 
 If any module/class is commented out from this list it will not be processed:
 
@@ -50,7 +50,7 @@ ACTIVE_ENDPOINT_MONITORS = {
     "vpnSSLStatistics": VPNSSLStatistics(),
     "status": Status(),
     "interfaces": Interfaces(),
-    #"vpnIPSecStatistics": VPNIPSecStatistics()
+    #"vpnIPSecStatistics": VPNIPSecStatistics()  # <--- disabled
 }
 ```
 
@@ -63,7 +63,7 @@ Exporter to include additional APIs and Metrics from the FortiGate.
 There are six examples of how these are written under the **fos_api_prom_exporter/endpoints** folder. Please examine 
 these example classes to understand how to construct a new one.
 
-There are two main methods that need to be written for any new monitor class: 
+There are two main methods that need to be written for any new endpoint/monitor class: 
 
 * init_prom_metrics
 * update_prom_metrics
@@ -104,3 +104,5 @@ This is the metric you must use to properly tune the above mentioned "knobs" for
 * Polling Interval
 * Extra FortiGates
 * Number of Active Endpoints.
+
+This is an automatically created Prometheus metrics, and it can be tracked/alerted from Grafana. 

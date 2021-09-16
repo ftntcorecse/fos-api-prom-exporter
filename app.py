@@ -46,9 +46,9 @@ if __name__ == '__main__':
         polling_interval_delta = float(polling_interval - duration)
         # calculate the polling saturation percentage
         polling_saturation = float((duration / polling_interval_delta)*100)
-        logs.info(f"Collection took {duration} seconds.")
-        logs.info(f"Sleeping for {polling_interval_delta} seconds.")
-        logs.info(f"Polling Saturation is {int(polling_saturation)}%")
+        logs.debug(f"Collection took {duration} seconds.")
+        logs.debug(f"Sleeping for {polling_interval_delta} seconds.")
+        logs.debug(f"Polling Saturation is {int(polling_saturation)}%")
         # record the duration
         WHOLE_COLLECTION_DURATION.observe(duration)
         # record the polling saturation
