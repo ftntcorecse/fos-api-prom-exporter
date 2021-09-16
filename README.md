@@ -1,13 +1,22 @@
 # FortiGate API Prometheus Exporter
 
-## Pre-Requisites
+## Contents
+1. [Pre-Requisites](#pre-requisites)
+2. [Getting Started](#getting-started)
+3. [Managing the API Monitor List](#managing-the-api-monitor-list)
+4. [Expanding Monitoring by Creating New Endpoint Classes](#expanding-monitoring-by-creating-new-endpoint-classes)
+5. [Tuning the Prometheus Exporter](#tuning-the-prometheus-exporter)
+6. [Appendix A - .env.example file](#appendix-a---envexample-file)
+7. [Appendix B - System Endpoint Class Example](#appendix-b---system-endpoint-class-example)
+
+### Pre-Requisites
 
 A FortiGate is required at a minimum.
 
 You should also have a Grafana/Prometheus server setup to receive the data. 
 
 
-## Getting Started
+### Getting Started
 
 * Clone this repo to a new project in an IDE of your choice.
 * Copy the **.env.example** file to a new file called simply **.env**
@@ -39,7 +48,7 @@ You should also have a Grafana/Prometheus server setup to receive the data.
 * Check that the service in Prometheus is running and metrics are being collected.
 * Add Prometheus to Grafana as a data source if not already present. 
 
-## Managing the API Monitor List
+### Managing the API Monitor List
 
 The file **fos_api_prom_exporter/endpoints/__init__.py** includes a basic dictionary for importing
 endpoint/monitor classes and including them for processing.
@@ -57,7 +66,8 @@ ACTIVE_ENDPOINT_MONITORS = {
 }
 ```
 
-## Expanding Monitoring by Creating New Endpoint Classes
+
+### Expanding Monitoring by Creating New Endpoint Classes
 
 The file **fos_api_prom_exporter/endpoints/base.py** includes an abstract class for easily 
 expanding the FortiOS Prometheus
@@ -80,7 +90,7 @@ Once you have identified new KPIs to write, start with **init_prom_metrics()**. 
 such as host, and vdom or else you cannot differentiate them. 
 
 
-## Tuning the Prometheus Exporter
+### Tuning the Prometheus Exporter
 
 The .env variable **FOS_POLLING_INTERVAL** controls how often new tasks to pull data are created. 
 
@@ -95,7 +105,7 @@ each instance of this exporter.
 
 The KPI for understanding "how behind" the exporter is in its polling of FortiGates, is called the **Polling Interval Saturation**.
 
-### Polling Interval Saturation
+#### Polling Interval Saturation
 
 The Polling Interval Saturation is a percentage (0-100%) of how much time it is taking to actually poll all FortiGates
 and Active Monitors, vs the polling interval itself.
@@ -114,13 +124,13 @@ The name of this metric is: **fos_metric_polling_interval_saturation**
 
 This metric is tracked as a whole across all configured FortiGates and Endpoints.
 
-### Polling Duration
+#### Polling Duration
 
 The polling duration is also tracked as an automatic Prometheus metric: **fos_metric_collection_duration**
 
 This metric is tracked as a whole across all configured FortiGates and Endpoints.
 
-## Appendix A - .env.example file
+### Appendix A - .env.example file
 
 ```
 PROM_EXPORTER_PORT = 8000
@@ -148,7 +158,7 @@ FOS_EXTRA_HOST_1 = '{"host": "10.1.1.1:443", "apikey": "123test", "vdom": "root"
 #FOS_EXTRA_HOST_3 = '{"host": "10.3.1.1:443", "apikey": "123test", "vdom": "root"}'
 ```
 
-## Appendix B - System Endpoint Class Example
+### Appendix B - System Endpoint Class Example
 
 ```python
 from prometheus_client import Counter, Gauge, Enum, Summary, Histogram, Info
