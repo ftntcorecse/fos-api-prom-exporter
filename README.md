@@ -19,18 +19,15 @@ You should also have a Grafana/Prometheus server setup to receive the data.
 ### Getting Started
 
 * Clone this repo to a new project in an IDE of your choice.
-* Copy the **.env.example** file to a new file called simply **.env**
-* If multiple Fortigates are needed see the "FOS_EXTRA_HOST" lines in the .env.example file.
+* Copy the **.env.example** file to a new file named **.env**
+* If multiple Fortigates are needed see the "FOS_EXTRA_HOST_x" lines in the .env.example file.
 * Create a read-only admin role on the target FortiGate(s).
-* On that same FortiGate, create a read-only API admin using the role above, and record the API key.
-
+* On the FortiGate(s), create a read-only API admin using the role above, and record the API key.
     * Make sure to setup the trusted host IP if this a production deployment.
 * Replace the **FOS_API_KEY** value in the **.env** file with the new API key.
 * Replace the **FOS_HOST** value to the FortiGate that will be monitored
-
     * If the FortiGate is using any other port than 443 for the admin GUI, this value needs to reflect that.
     * **host:port** format is always preferred -- otherwise port 443 is assumed.
-
 * Start **app.py**
 * Confirm the Prometheus exporter is alive on the HTTP port by opening it with a browser  
   and metrics can be viewed.
