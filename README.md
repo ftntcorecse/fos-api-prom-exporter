@@ -20,8 +20,8 @@ You should also have a Grafana/Prometheus server setup to receive the data.
     * If the FortiGate is using any other port than 443 for the admin GUI, this value needs to reflect that.
 
 * Start **app.py**
-* Confirm the Prometheus exporter is alive on the HTTP port by opening it with a brower  
-  and metrics can be viewed on a browser. 
+* Confirm the Prometheus exporter is alive on the HTTP port by opening it with a browser  
+  and metrics can be viewed. 
 * Edit your existing Prometheus server config file to include the following stanza:
 
 ```yaml
@@ -70,7 +70,7 @@ There are two main methods that need to be written for any new endpoint/monitor 
 
 See their descriptions in base.py as well as the other endpoint files to understand how these are created.
 
-In order to know exactly what metrics you want to create, use **test/fetch_url.py**, and the FortiOS FNDN API Explorer online,
+In order to know exactly what metrics you want to create, use **test/fetch_url.py**, and the FNDN FortiOS API Explorer online,
 to find new API endpoints and explore what data they return.
 
 Once you have identified new KPIs to write, start with **init_prom_metrics()**. Ensure you include the prometheus labels
@@ -90,7 +90,7 @@ monitor endpoint classes and including them for processing.
 These three basic elements will vary greatly from deployment to deployment, and so it is up to the user to properly tune
 each instance of this exporter.
 
-The KPI for understanding "how behind" the exporter is in its polling of Fortigates, is called the **Polling Interval Saturation**.
+The KPI for understanding "how behind" the exporter is in its polling of FortiGates, is called the **Polling Interval Saturation**.
 
 ### Polling Interval Saturation
 
@@ -99,11 +99,11 @@ and Active Monitors, vs the polling interval itself.
 
 If the polling interval is 10 seconds, and the time to poll data is 1 second, that would be a 10% saturation.
 
-This is the metric you must use to properly tune the above mentioned "knobs" for each instance of this exporter:
+This is the metric you must use to properly tune the above-mentioned "knobs" for each instance of this exporter:
 
 * Polling Interval
 * Extra FortiGates
-* Number of Active Endpoints.
+* Number of Active Endpoints
 
 This is an automatically created Prometheus metrics, and it can be tracked/alerted from Grafana. 
 
