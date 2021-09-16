@@ -29,21 +29,22 @@ You should also have a Grafana/Prometheus server setup to receive the data.
     * If the FortiGate is using any other port than 443 for the admin GUI, this value needs to reflect that.
     * **host:port** format is always preferred -- otherwise port 443 is assumed.
 * Start **app.py**
-* Confirm the Prometheus exporter is alive on the HTTP port by opening it with a browser  
-  and metrics can be viewed.
+* Confirm the Prometheus exporter is alive on the HTTP port by opening it with a browser, and ensure metrics can be
+  viewed.
 * Edit your existing Prometheus server config file to include the following stanza:
 
 ```yaml
 - job_name: 'fortios_exporter'
-    scrape_interval: 5s
-    metrics_path: /   < -- this is important
-    static_configs:
-      - targets: [ 'localhost:8000' ] < -- replace if running on remote server or different port
+  scrape_interval: 5s
+  metrics_path: /   < -- this is important
+  static_configs:
+    - targets: [ 'localhost:8000' ] < -- replace if running on remote server or different port (or add more exporters)
 ```
 
 * Restart Prometheus.
 * Check that the service in Prometheus is running and metrics are being collected.
 * Add Prometheus to Grafana as a data source if not already present.
+
 
 ### Managing the API Monitor List
 
@@ -71,7 +72,8 @@ The file **fos_api_prom_exporter/endpoints/base.py** includes an abstract class 
 Prometheus Exporter to include additional APIs and Metrics from the FortiGate.
 
 There are six examples of how these are written under the **fos_api_prom_exporter/endpoints** folder. Please examine
-these example classes to understand how to construct a new one.
+these example classes to understand how to construct a new one. The examples vary greatly in their implementation
+of how the data is parsed, and it largely depends on the data returned from the specific URL in question.
 
 There are two main methods that need to be written for any new endpoint/monitor class:
 
@@ -86,6 +88,9 @@ and then explore those APIs if you can use the data into useful metrics.
 
 Once you have identified new KPIs to write, start with **init_prom_metrics()**. Ensure you include the prometheus labels
 such as host, and vdom or else you cannot differentiate them.
+
+Next, create a new method called **update_prom_metrics()**. Following the structure of the URL results, gather and
+update the metrics created in **init_prom_metrics()** via the self.prom_metrics dictionary.
 
 ### Tuning the Prometheus Exporter
 
@@ -118,8 +123,8 @@ If at any point the saturation goes over 100% the exporter will "back off" for 5
 warning** log event. Look for these log entries in Grafana as it they are the "canary in the coal mine" for polling
 tuning problems.
 
-These are the "knobs" for each instance of this exporter that allow you to "tune" the exporters performance
-to keep the **Polling Interval Saturation** below 70%:
+These are the "knobs" for each instance of this exporter that allow you to "tune" the exporters performance to keep
+the **Polling Interval Saturation** below 70%:
 
 * Polling Interval
 * Extra FortiGates
