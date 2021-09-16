@@ -7,6 +7,7 @@ load_dotenv()
 
 
 class RouterStatistics(FOSEndpoint):
+    """Gets simple router statistics regarding the number of routes active on a FortiGate"""
     def __init__(self):
         self.host = environ.get("FOS_HOST")
         self.url = "/monitor/router/statistics"

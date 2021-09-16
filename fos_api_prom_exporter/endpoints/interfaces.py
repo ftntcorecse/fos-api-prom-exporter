@@ -7,6 +7,9 @@ load_dotenv()
 
 
 class Interfaces(FOSEndpoint):
+    """Gets basic information about Fortigate Interfaces.
+        Includes a self.filter to make sure the VLANs are included in the list
+    """
     def __init__(self):
         self.host = environ.get("FOS_HOST")
         self.url = "/monitor/system/interface"
@@ -31,6 +34,8 @@ class Interfaces(FOSEndpoint):
         }
 
     def update_prom_metrics(self, host=None, vdom=None, results=None):
+        # make empty buckets to calculate the SUM of each metric across all interfaces
+        # we do this here instead of grafana to keep it simple
         rx_bytes = []
         tx_bytes = []
         rx_packets = []
@@ -39,6 +44,7 @@ class Interfaces(FOSEndpoint):
         tx_errors = []
         for k, v in results["results"].items():
             try:
+                # update the metrics using the interface name as the label
                 self.prom_metrics["interface_rx_bytes"].labels(host=host,
                                                                interface=v["name"],
                                                                vdom=vdom).observe(v["rx_bytes"])
@@ -74,6 +80,7 @@ class Interfaces(FOSEndpoint):
         tx_packets_sum = int(sum(tx_packets))
         rx_errors_sum = int(sum(rx_errors))
         tx_errors_sum = int(sum(tx_errors))
+        # now update the metrics with the "total" label for the interface
         self.prom_metrics["interface_rx_bytes"].labels(host=host,
                                                        interface="total",
                                                        vdom=vdom).observe(rx_bytes_sum)

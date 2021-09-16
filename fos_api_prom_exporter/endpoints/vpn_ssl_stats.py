@@ -8,6 +8,7 @@ load_dotenv()
 
 
 class VPNSSLStatistics(FOSEndpoint):
+    """ Gets the SSL VPN stats for a FortiGate"""
     def __init__(self):
         self.host = environ.get("FOS_HOST")
         self.url = "/monitor/vpn/ssl/stats"

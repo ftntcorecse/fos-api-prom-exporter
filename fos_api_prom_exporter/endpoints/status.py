@@ -7,6 +7,7 @@ load_dotenv()
 
 
 class Status(FOSEndpoint):
+    """ Gets basic FortiGate system metadata """
     def __init__(self):
         self.host = environ.get("FOS_HOST")
         self.url = "/monitor/system/status"

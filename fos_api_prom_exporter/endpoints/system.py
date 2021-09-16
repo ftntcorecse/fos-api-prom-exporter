@@ -7,6 +7,7 @@ load_dotenv()
 
 
 class SystemResourceUsage(FOSEndpoint):
+    """Gets the resource usage for a FortiGate"""
     def __init__(self):
         self.host = environ.get("FOS_HOST")
         self.url = "/monitor/system/resource/usage"

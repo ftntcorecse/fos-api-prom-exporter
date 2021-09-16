@@ -8,6 +8,7 @@ load_dotenv()
 
 
 class VPNIPSecStatistics(FOSEndpoint):
+    """Gets the IPSec Tunnel Stats for a FortiGate"""
     def __init__(self):
         self.host = environ.get("FOS_HOST")
         self.url = "/monitor/vpn/ipsec"

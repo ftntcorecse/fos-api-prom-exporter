@@ -1,6 +1,6 @@
 from fos_api_prom_exporter.build_prom_registry import build_prometheus_registry
 from fos_api_prom_exporter.collect_endpoints import collect_active_endpoint_monitors
-from fos_api_prom_exporter.app_metrics import WHOLE_COLLECTION_DURATION, POLLING_INTERVAL_SAUTRATION
+from fos_api_prom_exporter.app_metrics import WHOLE_COLLECTION_DURATION, POLLING_INTERVAL_SATURATION
 from fos_api_prom_exporter.get_fgt_list import get_fortigate_list
 from prometheus_client import start_http_server
 import logging, sys
@@ -24,7 +24,7 @@ fortigate_list = get_fortigate_list()
 # make sure to also register the metrics contained in fos_api_prom_exporter.app_metrics
 REGISTRY = build_prometheus_registry()
 REGISTRY.register(WHOLE_COLLECTION_DURATION)
-REGISTRY.register(POLLING_INTERVAL_SAUTRATION)
+REGISTRY.register(POLLING_INTERVAL_SATURATION)
 
 if __name__ == '__main__':
     # start the prometheus http server
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     while True:
         # start a time for this loop
         start_time = time.time()
-        # run the collections in async
+        # run the collections in async -- include the event loop and extra fortigate list.
         event_loop.run_until_complete(collect_active_endpoint_monitors(event_loop=event_loop,
                                                                        fortigate_list=fortigate_list))
         # record end time
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         # record the duration
         WHOLE_COLLECTION_DURATION.observe(duration)
         # record the polling saturation
-        POLLING_INTERVAL_SAUTRATION.observe(polling_saturation)
+        POLLING_INTERVAL_SATURATION.observe(polling_saturation)
         # sleep -- back off if the delta is negative (polling saturation > 100%)
         if polling_interval_delta < 0:
             logs.warning("Polling interval exceeded! Sleeping for 5 seconds.")
