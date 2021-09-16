@@ -17,7 +17,7 @@ class PrometheusFOSAPIInterface():
         self.fos_disable_request_warnings = bool(strtobool(os.environ.get("FOS_DISABLE_REQUEST_WARNINGS")))
         self.fos_polling_timeout = os.environ.get("FOS_POLLING_TIMEOUT")
 
-    def get_url(self, url=None):
+    def get_url(self, url=None, vdom=None, filter=None):
         """ Gets and returns a URL from a Fortigate based on its class self.* properties"""
 
         with pyFGT.fortigate.FortiGate(self.fos_host,
@@ -27,7 +27,13 @@ class PrometheusFOSAPIInterface():
                                        verify_ssl=self.fos_verify_ssl,
                                        disable_request_warnings=self.fos_disable_request_warnings,
                                        timeout=int(self.fos_polling_timeout)) as fgt:
-            ret = fgt.get(url)
+            ret = ["pending"]
+            if not vdom:
+                vdom = "root"
+            if filter:
+                ret = fgt.get(url, f"vdom={vdom}", f"filter={filter}")
+            elif not filter:
+                ret = fgt.get(url, f"vdom={vdom}")
             if ret[0] == "success":
                 return True, ret[1]
             else:

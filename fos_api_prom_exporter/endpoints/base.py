@@ -44,6 +44,22 @@ class FOSEndpoint(ABC):
         self.__url_results = url_results
 
     @property
+    def vdom(self):
+        return self.__vdom
+
+    @vdom.setter
+    def vdom(self, vdom=""):
+        self.__vdom = vdom
+
+    @property
+    def filter(self):
+        return self.__filter
+
+    @filter.setter
+    def filter(self, filter=""):
+        self.__filter = filter
+
+    @property
     def prom_metrics(self):
         return self.__prom_metrics
 
@@ -52,12 +68,15 @@ class FOSEndpoint(ABC):
         self.__prom_metrics = prom_metrics
 
     async def collect(self):
-        success, data = self.fgt.get_url(self.url)
-        if success:
-            self.url_results = dict(data)
-            self.update_prom_metrics()
-        else:
-            raise ConnectionError(f"The call to url {self.url} failed.")
+        try:
+            success, data = self.fgt.get_url(url=self.url, vdom=self.vdom, filter=self.filter)
+            if success:
+                self.url_results = dict(data)
+                self.update_prom_metrics()
+            else:
+                raise ConnectionError(f"The call to url {self.url} failed.")
+        except Exception as e:
+            self.logs.error(f"An error occurred collecting some metrics: {e})")
 
     @abstractmethod
     def init_prom_metrics(self):

@@ -1,7 +1,7 @@
 from fos_api_prom_exporter.fos_api import PrometheusFOSAPIInterface
 import json
 
-URL = "/monitor/system/status"
+URL = "/monitor/system/interface"
 
 fos = PrometheusFOSAPIInterface()
 success, data = fos.get_url(url=URL)

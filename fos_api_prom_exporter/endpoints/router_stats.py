@@ -1,10 +1,15 @@
 from prometheus_client import Counter, Gauge, Enum, Summary, Histogram, Info
 from fos_api_prom_exporter.endpoints.base import FOSEndpoint
+from os import environ
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class RouterStatistics(FOSEndpoint):
     def __init__(self):
         self.url = "/monitor/router/statistics"
+        self.vdom = environ.get("FOS_HOST_VDOM")
+        self.filter = None
         super(RouterStatistics, self).__init__()
 
     def init_prom_metrics(self):
