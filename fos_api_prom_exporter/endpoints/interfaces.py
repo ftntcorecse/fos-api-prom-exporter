@@ -34,14 +34,6 @@ class Interfaces(FOSEndpoint):
         }
 
     def update_prom_metrics(self, host=None, vdom=None, results=None):
-        # make empty buckets to calculate the SUM of each metric across all interfaces
-        # we do this here instead of grafana to keep it simple
-        rx_bytes = []
-        tx_bytes = []
-        rx_packets = []
-        tx_packets = []
-        rx_errors = []
-        tx_errors = []
         for k, v in results["results"].items():
             try:
                 # update the metrics using the interface name as the label
@@ -63,41 +55,8 @@ class Interfaces(FOSEndpoint):
                 self.prom_metrics["interface_tx_errors"].labels(host=host,
                                                                 interface=v["name"],
                                                                 vdom=vdom).observe(v["tx_errors"])
-                rx_bytes.append(v["rx_bytes"])
-                tx_bytes.append(v["tx_bytes"])
-                rx_packets.append(v["rx_packets"])
-                tx_packets.append(v["tx_packets"])
-                rx_errors.append(v["rx_errors"])
-                tx_errors.append(v["tx_errors"])
             except Exception as e:
                 self.logs.error(f"Error updating metric {k}: {e}")
                 continue
-        # add up the totals and just make it another label, so we can more easily create
-        # graphs in grafana
-        rx_bytes_sum = int(sum(rx_bytes))
-        tx_bytes_sum = int(sum(tx_bytes))
-        rx_packets_sum = int(sum(rx_packets))
-        tx_packets_sum = int(sum(tx_packets))
-        rx_errors_sum = int(sum(rx_errors))
-        tx_errors_sum = int(sum(tx_errors))
-        # now update the metrics with the "total" label for the interface
-        self.prom_metrics["interface_rx_bytes"].labels(host=host,
-                                                       interface="total",
-                                                       vdom=vdom).observe(rx_bytes_sum)
-        self.prom_metrics["interface_tx_bytes"].labels(host=host,
-                                                       interface="total",
-                                                       vdom=vdom).observe(tx_bytes_sum)
-        self.prom_metrics["interface_rx_packets"].labels(host=host,
-                                                         interface="total",
-                                                         vdom=vdom).observe(rx_packets_sum)
-        self.prom_metrics["interface_rx_packets"].labels(host=host,
-                                                         interface="total",
-                                                         vdom=vdom).observe(tx_packets_sum)
-        self.prom_metrics["interface_rx_errors"].labels(host=host,
-                                                        interface="total",
-                                                        vdom=vdom).observe(rx_errors_sum)
-        self.prom_metrics["interface_tx_errors"].labels(host=host,
-                                                        interface="total",
-                                                        vdom=vdom).observe(tx_errors_sum)
 
         self.logs.debug(f"Done Updating Prom Metrics for {__name__} on {host}")
