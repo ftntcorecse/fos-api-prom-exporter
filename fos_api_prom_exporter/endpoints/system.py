@@ -9,25 +9,31 @@ load_dotenv()
 class SystemResourceUsage(FOSEndpoint):
     """Gets the resource usage for a FortiGate / VDOM """
     def __init__(self):
+        # define the host from the .env file
         self.host = environ.get("FOS_HOST")
+        # define the URL -- use test/fetch_url.py to figure out which URL to be monitored.
         self.url = "/monitor/system/resource/usage"
+        # get the vdom from the .env file
         self.vdom = environ.get("FOS_HOST_VDOM")
+        # set a filter here if needed for the GET operation of any URL to the FortiGate as defined in FNDN.
         self.filter = None
+        # overlay these attributes on the FOSEndpoint __init__ method by invoking the super() method
         super(SystemResourceUsage, self).__init__()
 
     def init_prom_metrics(self):
         """
-        Defines the Prometheus metrics for this child-class of the FOSEndpoint Abstract class.
-        - note the usage of the list on each counter
-        - these lists define the labels for each metric
-        - those labels are then pushed at the time of recording a metric value (see below, update_prom_metrics() )
+        Defines the Prometheus metrics for this child class of the FOSEndpoint Abstract class.
+        - note the usage of the list on each counter -- these lists denote labels.
+        - labels are very important and must be used in each child endpoint class created.
+        - those labels are pushed at the time of recording a metric value (see below, update_prom_metrics() )
+        - the labels allow you to differentiate the FortiGate, VDOM, and other values, in Grafana.
         :return: None
         """
         self.prom_metrics = {
 
             "cpu": Gauge('fgt_cpu_usage',  # Metric name
                          'CPU Resource Utilization',  # Metric description
-                         ['host', 'vdom']),  # Metric labels
+                         ['host', 'vdom']),  # Metric labels - Always remember to include at least the host and vdom.
             "mem": Gauge('fgt_memory_usage', 'RAM/Memory Resource Utilization', ['host', 'vdom']),
             "disk": Gauge('fgt_disk_usage', 'Disk spaced used percent', ['host', 'vdom']),
             "session": Gauge('fgt_ipv4_sessions', 'Active IPv4 Sessions', ['host', 'vdom']),
@@ -58,9 +64,11 @@ class SystemResourceUsage(FOSEndpoint):
         :param results: the results from the url call to this specific fortigate on the self.url property/path
         :return: None
         """
+        # the results dictionary returned from pyFGT is very dependable, so we can just pull up the results right away.
         for k, v in results["results"].items():
             try:
                 # notice the specification of labels using the input parameters to differentiate this metric
+                # it is very important that every self.prom_metrics call/update include the .labels() method
                 self.prom_metrics[k].labels(host=host, vdom=vdom).set(v[0]["current"])
                 # send the data to the debug logger if set to debug.
                 self.logs.debug(f"{k}: {v[0]['current']}")

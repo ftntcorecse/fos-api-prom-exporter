@@ -10,8 +10,10 @@ logging.basicConfig(stream=sys.stdout,
 
 
 class FOSEndpoint(ABC):
-    """A base abstract class that represents and contains the needed metadata and prometheus metrics.
-    Inherited by other modules using super() using one URL at a time.
+    """
+    A base abstract class that represents and contains the needed metadata and prometheus metrics.
+    Inherited by other endpoint modules using super().
+    One new child class per URL endpoint. That URL endpoint may yield many metrics, but it is a 1:1 relationship.
 
     When inherited you must define these values (see endpoints/system.py for an example):
     self.url
@@ -19,11 +21,16 @@ class FOSEndpoint(ABC):
     self.vdom
     self.filter
 
-    When inherited you must write specific functions for the URL endpoint:
-        init_prom_metrics()
-        update_prom_metrics()
+    When inherited you must write specific functions for the URL endpoint selected, and they will vary greatly:
+        init_prom_metrics() -  creates the prometheus metrics objects with labels. almost must include labels.
+        update_prom_metrics() - takes the results from a GET url call and parses them to their appropriate prometheus
+                                metrics created in init_prom_metrics().
+    Please see the other .py files in this "endpoints" directory for examples on how this class is inherited
+    and written for specific URL endpoints.
     """
     def __init__(self):
+        # load the .env file -- which should always be on git ignore, but always added to docker builds.
+        # see .env.example for more info.
         load_dotenv()
         # create the logger
         self.logs = logging.getLogger(__name__)
@@ -95,12 +102,13 @@ class FOSEndpoint(ABC):
         self.__prom_metrics = prom_metrics
 
     async def collect(self, host=None, apikey=None, vdom=None):
-        """ Called by collect_endpoints.py -- an async function.
-        When other classes inherit this one they automatically have this called.
-        This depends on the two abstract functions below being re-written in the child class.
+        """ Called by collect_endpoints.py -- an async function used by app.py (the main HTTP app/entrypoint).
+        When other classes inherit this one they automatically have this called,
+        when the app.py does its polling interval.
+        This depends on the two abstract functions below being re-written in the child class (see below).
         """
-        # if FOS_EXTRA_HOST parameters were not passed, then use the default FOS_HOST and FOS_VDOM
-        # the APIKEY will be pulled from enviornment variables in the fos_api.py interface
+        # if FOS_EXTRA_HOST_x parameters were not passed, then use the default FOS_HOST and FOS_VDOM
+        # the APIKEY will be pulled from environment variables in the fos_api.py interface
         # if the apikey is not included here.
         if not host:
             host = self.host
@@ -113,6 +121,9 @@ class FOSEndpoint(ABC):
                                              vdom=vdom,
                                              filter=self.filter)
             if success:
+                # if successful in retrieving the data, then make a copy into a new dictionary
+                # and send that dictionary, along with the host/vdom called, to the update_prom_metrics
+                # class that has been abstracted in the child endpoint module.
                 results = dict(data)
                 self.update_prom_metrics(host=host, vdom=vdom, results=results)
             else:
@@ -123,11 +134,14 @@ class FOSEndpoint(ABC):
     @abstractmethod
     def init_prom_metrics(self):
         """An Abstracted class responsible for creating Prometheus metrics and assigning to self.prom_metrics.
+        Always remember to include labels as the third argument to a prometheus metric object.
+        This way when metrics are recording, they can be differentiated by FortiGate host, and VDOM, and
+        in this case, interfaces as well. This is important for Grafana usage.
 
         Example child abstract class should run something like this:
 
         self.prom_metrics = {
-            "interface_rx_bytes": Histogram('fgt_interface_rx_bytes',
+            "interface_rx_bytes": Histogram('fgt_interface_rx_bytes',               # note the labels here below
                                             'Total inbound bytes to interfaces', ['host', 'interface', 'vdom']),
             "interface_tx_bytes": Histogram('fgt_interface_tx_bytes',
                                             'Total outbound bytes to interfaces', ['host', 'interface', 'vdom']),
@@ -148,6 +162,9 @@ class FOSEndpoint(ABC):
         self.prom_metrics["interface_rx_bytes"].labels(host=host,
                                                        interface=v["name"],
                                                        vdom=vdom).observe(v["rx_bytes"])
+
+        Note the usage of .labels(key=value) immediately after the prometheus metric itself, and THEN we "observe"
+        the data (observe is specific to a histogram, could be any number of operations).
 
         """
         raise NotImplementedError("This class should be abstracted!")

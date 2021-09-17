@@ -1,12 +1,12 @@
+import logging, sys
+import os
+import time
+import asyncio
 from fos_api_prom_exporter.build_prom_registry import build_prometheus_registry
 from fos_api_prom_exporter.collect_endpoints import collect_active_endpoint_monitors
 from fos_api_prom_exporter.app_metrics import WHOLE_COLLECTION_DURATION, POLLING_INTERVAL_SATURATION
 from fos_api_prom_exporter.get_fgt_list import get_fortigate_list
 from prometheus_client import start_http_server
-import logging, sys
-import os
-import time
-import asyncio
 
 # configure logging
 logging.basicConfig(stream=sys.stdout,
@@ -55,7 +55,8 @@ if __name__ == '__main__':
         POLLING_INTERVAL_SATURATION.observe(polling_saturation)
         # sleep -- back off if the delta is negative (polling saturation > 100%)
         if polling_interval_delta < 0:
-            logs.warning("Polling interval exceeded! Sleeping for 5 seconds.")
+            logs.warning("Polling interval exceeded! Sleeping for 5 seconds. We cannot sleep for negative seconds.")
+            logs.error("This exporter requires tuning. It's polling interval is being exceeded during collection.")
             time.sleep(5)
         else:
             time.sleep(polling_interval_delta)
