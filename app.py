@@ -22,8 +22,8 @@ event_loop = asyncio.get_event_loop()
 fortigate_list = get_fortigate_list()
 
 # build the prometheus metric registry
-# make sure to also register the metrics contained in fos_api_prom_exporter.app_metrics
 REGISTRY = build_prometheus_registry()
+# also register the metrics contained in fos_api_prom_exporter.app_metrics that were imported above
 REGISTRY.register(WHOLE_COLLECTION_DURATION)
 REGISTRY.register(POLLING_INTERVAL_SATURATION)
 
@@ -64,13 +64,13 @@ if __name__ == '__main__':
         # if the loop count is a modulus of 10, send a heartbeat info log message
         if loop_count % heartbeat_modulo == 0:
             server_start_time_delta = (int(time.time() - server_start_time)/60)
-            logs.info(f"FortiOS Prometheus Exporter has looped {loop_count} times "
+            logs.info(f"FortiOS Prometheus Exporter has sampled {loop_count} times "
                       f"in {round(server_start_time_delta, 1)} minutes or {round(server_start_time_delta/60, 2)} hours "
                       f"or {round(server_start_time_delta/60/24,3)} days.")
         # sleep -- back off if the delta is negative (polling saturation > 100%)
         if polling_interval_delta < 0:
-            logs.warning("Polling interval exceeded! Sleeping for 5 seconds. We cannot sleep for negative seconds.")
+            logs.warning("Polling interval exceeded! Sleeping for 15 seconds. We cannot sleep for negative seconds.")
             logs.error("This exporter requires tuning. It's polling interval is being exceeded during collection.")
-            time.sleep(5)
+            time.sleep(15)
         else:
             time.sleep(polling_interval_delta)

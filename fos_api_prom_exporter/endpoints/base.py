@@ -15,7 +15,10 @@ class FOSEndpoint(ABC):
     Inherited by other endpoint modules using super().
     One new child class per URL endpoint. That URL endpoint may yield many metrics, but it is a 1:1 relationship.
 
-    When inherited you must define these values (see endpoints/system.py for an example):
+    Please see endpoints/system.py for a fully documented example.
+
+    When inherited you must define these values (again, see endpoints/system.py for an example):
+
     self.url
     self.host
     self.vdom
