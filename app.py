@@ -27,12 +27,19 @@ REGISTRY.register(WHOLE_COLLECTION_DURATION)
 REGISTRY.register(POLLING_INTERVAL_SATURATION)
 
 if __name__ == '__main__':
+    server_start_time = time.time()
     # start the prometheus http server
     start_http_server(int(os.environ.get("PROM_EXPORTER_PORT")))
     logs.info(f"Prometheus Server started on port {os.environ.get('PROM_EXPORTER_PORT')}")
+    logs.info(f"Periodic heartbeat log messages will be sent.")
     # read the polling interval, so we don't have to keep doing it
     polling_interval = float(os.environ.get("FOS_POLLING_INTERVAL"))
+    # init a counter so we can leave heartbeat log messages every so often
+    loop_count = 0
+    # get the heartbeat modulo from the env vars
+    heartbeat_modulo = int(os.environ.get("FOS_HEARTBEAT_MODULO"))
     while True:
+        loop_count += 1
         # start a time for this loop
         start_time = time.time()
         # run the collections in async -- include the event loop and extra fortigate list.
@@ -53,6 +60,12 @@ if __name__ == '__main__':
         WHOLE_COLLECTION_DURATION.observe(duration)
         # record the polling saturation
         POLLING_INTERVAL_SATURATION.observe(polling_saturation)
+        # if the loop count is a modulus of 10, send a heartbeat info log message
+        if loop_count % heartbeat_modulo == 0:
+            server_start_time_delta = (int(time.time() - server_start_time)/60)
+            logs.info(f"FortiOS Prometheus Exporter has looped {loop_count} times "
+                      f"in {round(server_start_time_delta, 1)} minutes or {round(server_start_time_delta/60, 2)} hours "
+                      f"or {round(server_start_time_delta/60/24,3)} days.")
         # sleep -- back off if the delta is negative (polling saturation > 100%)
         if polling_interval_delta < 0:
             logs.warning("Polling interval exceeded! Sleeping for 5 seconds. We cannot sleep for negative seconds.")
