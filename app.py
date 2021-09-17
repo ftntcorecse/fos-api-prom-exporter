@@ -17,7 +17,8 @@ logs = logging.getLogger("FOS_Prometheus_Exporter")
 # make asyncio loop
 event_loop = asyncio.get_event_loop()
 
-# get any extra fortigates from the env file and store in a dictionary
+# get any extra fortigates from the env file and store in a dictionary for later use
+# these are in addition to the FOS_HOST and FOS_API_KEY values defined in .env
 fortigate_list = get_fortigate_list()
 
 # build the prometheus metric registry
