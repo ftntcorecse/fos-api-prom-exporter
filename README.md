@@ -16,6 +16,12 @@ A FortiGate is required at a minimum.
 
 You should also have a Grafana/Prometheus server setup to receive the data.
 
+Access to the Fortinet Developer Network (FNDN) is highly recommended if expansion for new monitor API endpoints
+is planned. This API Explorer eases the process of identifying new URLs and metrics to monitor.
+
+This repository depends heavily on the **prometheus_client** Python library. Documentation for
+this library can be found here: https://github.com/prometheus/client_python
+
 ### Getting Started
 
 * Clone this repo to a new project in an IDE of your choice.
