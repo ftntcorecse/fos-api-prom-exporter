@@ -1,2 +1,4 @@
 /.env
 /.idea
+fos_api_prom_exporter/__pycache__/
+fos_api_prom_exporter/endpoints/__pycache__/
